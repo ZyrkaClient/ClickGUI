@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZyrkaClient - ClickGUI Preview</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Courier New",monospace;font-size:14px}
+#gui{position:relative;width:100%;height:100%;background:#0A0A1A;display:flex;opacity:0;animation:fadeIn .3s forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+
+#sidebar{position:relative;width:110px;min-width:110px;height:100%;background:#10101E;border-right:1px solid #AA00AA;z-index:2;display:flex;flex-direction:column}
+#sidebar::after{content:'';position:absolute;top:0;right:-1px;width:1px;height:100%;background:rgba(170,0,170,.33)}
+#logo{color:#AA00AA;font-size:11px;font-weight:700;padding:8px 10px;letter-spacing:.5px}
+
+.cat-tab{height:30px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#999;font-size:12px;position:relative;transition:background .1s,color .1s;user-select:none}
+.cat-tab:hover{background:rgba(255,255,255,.08)}
+.cat-tab.selected{background:rgba(170,0,170,.2);color:#fff}
+.cat-tab.selected::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:#AA00AA}
+.sep{margin:6px 0 2px}
+
+#targets-tab{height:30px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#999;font-size:12px;user-select:none;transition:background .1s,color .1s}
+#targets-tab:hover{background:rgba(255,255,255,.08)}
+#targets-tab.active{background:rgba(170,0,170,.2);color:#fff}
+#targets-tab.active::before{content:'';position:absolute;left:0;top:0;width:3px;height:30px;background:#AA00AA}
+
+.spacer{flex:1}
+
+#config-area{position:relative}
+#config-btn{height:22px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#AA00AA;font-size:12px;user-select:none;transition:background .1s;margin-bottom:10px}
+#config-btn:hover{background:rgba(255,255,255,.08)}
+
+#config-dd{position:absolute;bottom:36px;left:6px;width:98px;background:#12122A;border:1px solid #AA00AA;border-radius:0;overflow:hidden;display:none;z-index:10}
+#config-dd.open{display:block;animation:ddSlide .25s ease-out}
+@keyframes ddSlide{from{opacity:0;transform:scaleY(.8);transform-origin:bottom}to{opacity:1;transform:scaleY(1)}}
+.dd-item{height:22px;display:flex;align-items:center;padding:0 6px;cursor:pointer;color:#CCC;font-size:11px;transition:background .1s,color .1s;user-select:none}
+.dd-item:hover{background:rgba(170,0,170,.25);color:#fff}
+.dd-sep{height:1px;background:rgba(170,0,170,.27);margin:3px 4px}
+.dd-config{height:22px;display:flex;align-items:center;padding:0 6px;cursor:pointer;color:#DDD;font-size:11px;transition:background .1s,color .1s;user-select:none}
+.dd-config:hover{background:rgba(170,0,170,.25);color:#fff}
+.dd-empty{height:22px;display:flex;align-items:center;padding:0 6px;color:#888;font-size:11px}
+
+#content{flex:1;display:flex;padding:10px 0 10px 16px;gap:20px;overflow:hidden;position:relative}
+
+#module-list{width:160px;min-width:160px;height:100%;background:rgba(14,14,28,.8);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow:hidden}
+#module-list.visible{display:flex}
+#ml-header{display:flex;padding:2px 4px 4px}
+#ml-search{width:100%;background:#1A1A2E;border:1px solid #333;color:#AAA;font:11px "Courier New",monospace;padding:3px 6px;outline:none;transition:border .15s}
+#ml-search:focus{border-color:#AA00AA;color:#fff}
+#ml-search::placeholder{color:#555}
+#ml-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:2px 2px 0}
+#ml-body::-webkit-scrollbar{width:4px}
+#ml-body::-webkit-scrollbar-track{background:transparent}
+#ml-body::-webkit-scrollbar-thumb{background:rgba(170,0,170,.3)}
+
+.module-item{height:26px;display:flex;align-items:center;padding:0 8px;cursor:pointer;position:relative;transition:background .1s;user-select:none;margin-bottom:1px}
+.module-item:hover{background:rgba(42,42,74,.3)}
+.module-item.enabled{background:rgba(26,26,58,.13)}
+.module-item.enabled::before{content:'';position:absolute;left:0;top:0;width:2px;height:100%;background:rgba(170,0,170,.8)}
+.module-name{flex:1;font-size:12px;color:#888;transition:color .15s}
+.module-item.enabled .module-name{color:#fff}
+.module-settings-btn{font-size:11px;color:rgba(170,0,170,.4);cursor:pointer;padding:0 2px;transition:color .1s;user-select:none}
+.module-settings-btn:hover{color:rgba(170,0,170,.9)}
+.module-item.enabled .module-settings-btn{color:rgba(170,0,170,.6)}
+
+#settings-panel{width:160px;min-width:160px;height:auto;max-height:100%;background:rgba(14,14,28,.94);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow:hidden}
+#settings-panel.open{display:flex;animation:settingsIn .3s ease-out}
+@keyframes settingsIn{from{opacity:0;max-height:0}to{opacity:1;max-height:100%}}
+#sp-header{color:#AA00AA;font-size:11px;padding:6px 8px 2px;font-weight:700}
+#sp-body{flex:1;overflow-y:auto;padding:0 4px 4px}
+.setting-row{min-height:28px;padding:2px 4px;font-size:11px}
+.setting-name{color:#CCC;margin-bottom:1px}
+.setting-value{margin-top:1px}
+
+.setting-bool{display:flex;justify-content:flex-end}
+.setting-bool span{cursor:pointer;font-size:11px;font-weight:700;padding:1px 8px;transition:color .1s;user-select:none}
+.setting-bool.on span{color:#0C0}
+.setting-bool.off span{color:#C00}
+.setting-number{text-align:right;color:#FFA;font-size:11px}
+.setting-bar{margin-top:2px;height:3px;background:rgba(51,51,85,.33);position:relative;cursor:pointer;border-radius:1px}
+.setting-bar-fill{height:100%;background:rgba(170,0,170,.8);border-radius:1px;transition:width .1s}
+.setting-mode{text-align:right;color:#5FF;font-size:11px;cursor:pointer;user-select:none}
+.setting-mode:hover{text-decoration:underline}
+.setting-color{display:flex;justify-content:flex-end}
+.setting-swatch{width:18px;height:12px;border:1px solid rgba(255,255,255,.53);cursor:pointer}
+
+#entity-filter{width:180px;min-width:180px;height:100%;background:rgba(14,14,28,.8);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow-y:auto;padding:0 0 8px}
+#entity-filter.visible{display:flex}
+#ef-header{color:#AA00AA;font-size:12px;padding:6px 8px 2px;font-weight:700}
+#ef-sub{color:#888;font-size:10px;padding:0 8px 6px}
+#ef-body{padding:0 4px}
+.ef-sep{height:1px;background:rgba(170,0,170,.27);margin:8px 4px}
+.ef-section-title{color:#888;font-size:10px;padding:2px 4px}
+.ef-row{height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 4px;cursor:pointer;border-radius:2px;margin-bottom:2px;transition:background .1s;user-select:none}
+.ef-row:hover{background:rgba(42,42,74,.2)}
+.ef-row-name{color:#CCC;font-size:11px}
+.ef-row-val{font-size:11px;font-weight:700;cursor:pointer;padding:1px 6px;transition:color .1s;user-select:none}
+.ef-row-val.on{color:#0C0}
+.ef-row-val.off{color:#C00}
+
+#size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#555;font-size:13px;text-align:center;display:none}
+@media(max-width:620px){#entity-filter.visible{display:none}#module-list.visible{display:none}#settings-panel.open{display:none}#size-hint{display:block}}
+</style>
+</head>
+<body>
+
+<div id="gui">
+  <div id="sidebar">
+    <div id="logo">ZyrkaClient</div>
+    <div id="categories">
+      <div class="cat-tab selected" data-cat="COMBAT">Combat</div>
+      <div class="cat-tab" data-cat="MOVEMENT">Movement</div>
+      <div class="cat-tab" data-cat="RENDER">Render</div>
+      <div class="cat-tab" data-cat="MISC">Misc</div>
+    </div>
+    <div class="sep"></div>
+    <div id="targets-tab">Targets</div>
+    <div class="spacer"></div>
+    <div id="config-area">
+      <div id="config-btn">Config</div>
+      <div id="config-dd">
+        <div class="dd-item" data-action="save">Save</div>
+        <div class="dd-item" data-action="load">Load</div>
+        <div class="dd-item" data-action="delete">Delete</div>
+        <div class="dd-item" data-action="browse">Browse</div>
+        <div class="dd-sep"></div>
+        <div id="dd-configs"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="size-hint">Window too small &mdash; resize</div>
+
+    <div id="module-list" class="visible">
+      <div id="ml-header">
+        <input id="ml-search" type="text" placeholder="Search..." autocomplete="off">
+      </div>
+      <div id="ml-body"></div>
+    </div>
+
+    <div id="settings-panel"></div>
+
+    <div id="entity-filter"></div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id:'COMBAT',    name:'Combat' },
+  { id:'MOVEMENT',  name:'Movement' },
+  { id:'RENDER',    name:'Render' },
+  { id:'MISC',      name:'Misc' }
+];
+
+const ENTITY_CATS = ['Players','Hostiles','Passives','Misc'];
+
+const MODULES = [
+  { name:'Triggerbot', cat:'COMBAT', enabled:false, settings:[
+    { type:'number', name:'Reach',         min:3, max:6,   val:4.5, step:.1 },
+    { type:'mode',   name:'Hit Time Mode', modes:['Static','Random','1.9'], val:'Static' },
+    { type:'number', name:'Hit Speed',     min:0, max:25,  val:10,  step:1, hideIf:{setting:'Hit Time Mode',value:'1.9'} },
+    { type:'number', name:'Delay',         min:0, max:500, val:50,  step:10 }
+  ]},
+  { name:'Criticals', cat:'COMBAT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Packet','Jump'], val:'Packet' }
+  ]},
+  { name:'Velocity', cat:'COMBAT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Packet','Jump Reset','Lag'], val:'Packet' }
+  ]},
+  { name:'Flight', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Vanilla','Jetpack','Creative','Infinite Jump'], val:'Vanilla' }
+  ]},
+  { name:'Step', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode',   name:'Mode',      modes:['Instant','Legit'], val:'Instant' },
+    { type:'number', name:'Max Blocks', min:1, max:10, val:2, step:.5, hideIf:{setting:'Mode',value:'Legit'} }
+  ]},
+  { name:'Speed', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode',   name:'Mode',       modes:['Legit Hop','Piercing Attack'], val:'Legit Hop' },
+    { type:'number', name:'Multiplier', min:1, max:5, val:1.5, step:.5 }
+  ]},
+  { name:'Jesus', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Standard','Solid'], val:'Standard' }
+  ]},
+  { name:'NoFall', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['MLG','Packet','No Ground'], val:'Packet' }
+  ]},
+  { name:'ESP', cat:'RENDER', enabled:false, settings:[
+    { type:'color', name:'Entity Color', color:0xFFFFFFFF }
+  ]},
+  { name:'ChestESP', cat:'RENDER', enabled:false, settings:[
+    { type:'number', name:'Max Distance', min:10, max:100, val:50, step:5 },
+    { type:'color',  name:'Chest Color',  color:0xFFFFAA00 }
+  ]},
+  { name:'BlockESP', cat:'RENDER', enabled:false, settings:[
+    { type:'mode',   name:'Block Selection', modes:['Ores','Diamond','Ancient Debris','Custom'], val:'Ores' },
+    { type:'number', name:'Max Distance',    min:10, max:100, val:30, step:5 },
+    { type:'color',  name:'Block Color',     color:0xFF00FF00 }
+  ]},
+  { name:'Tracers', cat:'RENDER', enabled:false, settings:[
+    { type:'color', name:'Tracer Color', color:0xFFFFFFFF }
+  ]},
+  { name:'Fullbright',  cat:'RENDER', enabled:false, settings:[] },
+  { name:'Item Physics', cat:'RENDER', enabled:false, settings:[] },
+  { name:'Nametags', cat:'RENDER', enabled:false, settings:[
+    { type:'bool', name:'Health',   val:true },
+    { type:'bool', name:'Ping',     val:true },
+    { type:'bool', name:'Gamemode', val:false },
+    { type:'bool', name:'Name',     val:true },
+    { type:'bool', name:'Distance', val:false }
+  ]},
+  { name:'Trajectory', cat:'RENDER', enabled:false, settings:[] },
+  { name:'AutoEat',  cat:'MISC', enabled:false, settings:[] },
+  { name:'AntiAFK',  cat:'MISC', enabled:false, settings:[] },
+  { name:'AutoTool', cat:'MISC', enabled:false, settings:[
+    { type:'bool', name:'Sword',   val:true },
+    { type:'bool', name:'Pickaxe', val:true },
+    { type:'bool', name:'Axe',     val:true },
+    { type:'bool', name:'Shovel',  val:true },
+    { type:'bool', name:'Hoe',     val:true }
+  ]}
+];
+
+const entityTarget = { Players:true, Hostiles:true, Passives:false, Misc:false };
+const entityVisual = { Players:true, Hostiles:true, Passives:true, Misc:false };
+
+const configFiles = ['myconfig','pvp','survival','test'];
+
+let selectedCat = 'COMBAT';
+let showTargets = false;
+let configOpen = false;
+let searchQuery = '';
+let settingsModule = null;
+let moduleStates = {};
+let settingStates = {};
+
+MODULES.forEach(m => {
+  moduleStates[m.name] = m.enabled;
+  settingStates[m.name] = {};
+  m.settings.forEach(s => {
+    if (s.type === 'number') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'bool') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'mode') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'color') settingStates[m.name][s.name] = s.color;
+  });
+});
+
+const catTabs = document.querySelectorAll('.cat-tab');
+const targetsTab = document.getElementById('targets-tab');
+const configBtn = document.getElementById('config-btn');
+const configDD = document.getElementById('config-dd');
+const ddConfigs = document.getElementById('dd-configs');
+const moduleList = document.getElementById('module-list');
+const mlBody = document.getElementById('ml-body');
+const settingsPanel = document.getElementById('settings-panel');
+const entityFilter = document.getElementById('entity-filter');
+const searchInput = document.getElementById('ml-search');
+
+function getFilteredModules() {
+  const q = searchQuery.toLowerCase().trim();
+  let list = MODULES.filter(m => m.cat === selectedCat);
+  if (q) list = MODULES.filter(m => m.name.toLowerCase().includes(q));
+  return list;
+}
+
+function renderModuleList() {
+  const modules = getFilteredModules();
+  let html = '';
+  if (searchQuery) {
+    html += `<div style="color:#FFA;padding:4px 8px;font-size:11px;background:rgba(255,255,170,.05)">Search: ${searchQuery}</div>`;
+  }
+  if (!modules.length) {
+    mlBody.innerHTML = html + '<div style="color:#555;padding:8px;font-size:11px">No modules</div>';
+    return;
+  }
+  html += modules.map(mod => {
+    const en = moduleStates[mod.name];
+    const hasSets = mod.settings.length > 0;
+    const isSettings = settingsModule === mod.name;
+    return `<div class="module-item${en?' enabled':''}" data-mod="${mod.name}">
+      <span class="module-name">${mod.name}</span>
+      ${hasSets ? `<span class="module-settings-btn">${isSettings ? '-' : '+'}</span>` : ''}
+    </div>`;
+  }).join('');
+  mlBody.innerHTML = html;
+}
+
+function isSettingVisible(mod, s) {
+  if (!s.hideIf) return true;
+  return settingStates[mod.name][s.hideIf.setting] !== s.hideIf.value;
+}
+
+function renderSettings() {
+  if (!settingsModule) { settingsPanel.classList.remove('open'); settingsPanel.innerHTML = ''; return; }
+  const mod = MODULES.find(m => m.name === settingsModule);
+  if (!mod || !mod.settings.length) { settingsPanel.classList.remove('open'); settingsPanel.innerHTML = ''; return; }
+
+  settingsPanel.classList.add('open');
+  let html = `<div id="sp-header">${mod.name} Settings</div><div id="sp-body">`;
+  mod.settings.forEach(s => {
+    if (!isSettingVisible(mod, s)) return;
+    const val = settingStates[mod.name][s.name];
+    html += `<div class="setting-row"><div class="setting-name">${s.name}</div><div class="setting-value">`;
+    if (s.type === 'bool') {
+      const on = val;
+      html += `<div class="setting-bool ${on?'on':'off'}" data-mod="${mod.name}" data-set="${s.name}"><span>${on?'ON':'OFF'}</span></div>`;
+    } else if (s.type === 'number') {
+      const pct = ((val - s.min) / (s.max - s.min)) * 100;
+      html += `<div class="setting-number">${val.toFixed(1)}</div>`;
+      html += `<div class="setting-bar" data-mod="${mod.name}" data-set="${s.name}" data-min="${s.min}" data-max="${s.max}"><div class="setting-bar-fill" style="width:${pct}%"></div></div>`;
+    } else if (s.type === 'mode') {
+      html += `<span class="setting-mode" data-mod="${mod.name}" data-set="${s.name}">${val}</span>`;
+    } else if (s.type === 'color') {
+      const c = val >>> 0;
+      const r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
+      html += `<div class="setting-color"><span class="setting-swatch" style="background:rgb(${r},${g},${b})" data-mod="${mod.name}" data-set="${s.name}"></span></div>`;
+    }
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  settingsPanel.innerHTML = html;
+}
+
+function renderEntityFilter() {
+  let html = `<div id="ef-header">Entity Targets</div><div id="ef-sub">Target Settings</div><div id="ef-body">`;
+  ENTITY_CATS.forEach(cat => {
+    const en = entityTarget[cat];
+    html += `<div class="ef-row"><span class="ef-row-name">${cat}</span><span class="ef-row-val ${en?'on':'off'}" data-ef="target" data-cat="${cat}">${en?'ON':'OFF'}</span></div>`;
+  });
+  html += `<div class="ef-sep"></div><div class="ef-section-title">Visual Settings</div>`;
+  ENTITY_CATS.forEach(cat => {
+    const en = entityVisual[cat];
+    html += `<div class="ef-row"><span class="ef-row-name">${cat}</span><span class="ef-row-val ${en?'on':'off'}" data-ef="visual" data-cat="${cat}">${en?'ON':'OFF'}</span></div>`;
+  });
+  html += `</div>`;
+  entityFilter.innerHTML = html;
+}
+
+function renderConfigDropdown() {
+  const fragment = document.createDocumentFragment();
+  const actions = ['Save','Load','Delete','Browse'];
+  actions.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'dd-item';
+    el.dataset.action = a.toLowerCase();
+    el.textContent = a;
+    fragment.appendChild(el);
+  });
+  const sep = document.createElement('div'); sep.className = 'dd-sep'; fragment.appendChild(sep);
+  if (configFiles.length) {
+    configFiles.forEach(cf => {
+      const el = document.createElement('div');
+      el.className = 'dd-config';
+      el.dataset.config = cf;
+      el.textContent = cf;
+      fragment.appendChild(el);
+    });
+  } else {
+    const el = document.createElement('div'); el.className = 'dd-empty'; el.textContent = '(no configs)'; fragment.appendChild(el);
+  }
+  ddConfigs.innerHTML = '';
+  ddConfigs.appendChild(fragment);
+}
+
+function renderAll() {
+  renderModuleList();
+  renderSettings();
+  renderEntityFilter();
+}
+
+function showModules() {
+  showTargets = false;
+  moduleList.classList.add('visible');
+  entityFilter.classList.remove('visible');
+  targetsTab.classList.remove('active');
+  renderAll();
+}
+function showEntityFilter() {
+  showTargets = true;
+  settingsModule = null;
+  moduleList.classList.remove('visible');
+  settingsPanel.classList.remove('open');
+  entityFilter.classList.add('visible');
+  targetsTab.classList.add('active');
+  renderAll();
+}
+
+catTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (showTargets) showModules();
+    catTabs.forEach(t => t.classList.remove('selected'));
+    tab.classList.add('selected');
+    selectedCat = tab.dataset.cat;
+    settingsModule = null;
+    renderAll();
+  });
+});
+
+targetsTab.addEventListener('click', () => {
+  if (showTargets) showModules();
+  else showEntityFilter();
+});
+
+configBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  configOpen = !configOpen;
+  configDD.classList.toggle('open', configOpen);
+  if (configOpen) renderConfigDropdown();
+});
+document.addEventListener('click', () => {
+  configOpen = false;
+  configDD.classList.remove('open');
+});
+
+configDD.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const item = e.target.closest('.dd-item, .dd-config');
+  if (!item) return;
+  configOpen = false;
+  configDD.classList.remove('open');
+  if (item.dataset.action === 'browse') {
+    alert('Browse: opens config directory');
+  } else if (item.dataset.action) {
+    alert(`Action: ${item.dataset.action} (enter config name)`);
+  } else if (item.dataset.config) {
+    alert(`Config selected: ${item.dataset.config}`);
+  }
+});
+
+mlBody.addEventListener('click', (e) => {
+  const item = e.target.closest('.module-item');
+  if (!item) return;
+  const modName = item.dataset.mod;
+  const mod = MODULES.find(m => m.name === modName);
+  if (!mod) return;
+
+  if (e.target.classList.contains('module-settings-btn')) {
+    if (settingsModule === modName) {
+      settingsModule = null;
+    } else {
+      settingsModule = modName;
+    }
+    renderAll();
+    return;
+  }
+
+  moduleStates[modName] = !moduleStates[modName];
+  renderModuleList();
+});
+
+settingsPanel.addEventListener('click', (e) => {
+  const boolDiv = e.target.closest('.setting-bool');
+  if (boolDiv) {
+    const modName = boolDiv.dataset.mod;
+    const setName = boolDiv.dataset.set;
+    settingStates[modName][setName] = !settingStates[modName][setName];
+    renderSettings();
+    return;
+  }
+  const modeSpan = e.target.closest('.setting-mode');
+  if (modeSpan) {
+    const modName = modeSpan.dataset.mod;
+    const setName = modeSpan.dataset.set;
+    const mod = MODULES.find(m => m.name === modName);
+    const set = mod.settings.find(s => s.name === setName);
+    if (set && set.modes) {
+      const idx = set.modes.indexOf(settingStates[modName][setName]);
+      settingStates[modName][setName] = set.modes[(idx + 1) % set.modes.length];
+      renderSettings();
+    }
+    return;
+  }
+});
+
+settingsPanel.addEventListener('mousedown', (e) => {
+  const bar = e.target.closest('.setting-bar');
+  if (!bar) return;
+  e.preventDefault();
+  const modName = bar.dataset.mod;
+  const setName = bar.dataset.set;
+  const min = parseFloat(bar.dataset.min);
+  const max = parseFloat(bar.dataset.max);
+  const mod = MODULES.find(m => m.name === modName);
+  const set = mod.settings.find(s => s.name === setName);
+
+  function updateBar(clientX) {
+    const rect = bar.getBoundingClientRect();
+    let rel = (clientX - rect.left) / rect.width;
+    rel = Math.max(0, Math.min(1, rel));
+    const val = min + rel * (max - min);
+    const step = set.step || 0.1;
+    const stepped = Math.round(val / step) * step;
+    settingStates[modName][setName] = Math.max(min, Math.min(max, stepped));
+    renderSettings();
+  }
+
+  const onMove = (ev) => updateBar(ev.clientX);
+  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  updateBar(e.clientX);
+});
+
+entityFilter.addEventListener('click', (e) => {
+  const val = e.target.closest('.ef-row-val');
+  if (!val) return;
+  const cat = val.dataset.cat;
+  if (val.dataset.ef === 'target') {
+    entityTarget[cat] = !entityTarget[cat];
+  } else if (val.dataset.ef === 'visual') {
+    entityVisual[cat] = !entityVisual[cat];
+  }
+  renderEntityFilter();
+});
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  settingsModule = null;
+  renderModuleList();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (searchInput === document.activeElement) {
+      searchInput.blur();
+    }
+    e.preventDefault();
+  }
+});
+
+renderConfigDropdown();
+renderAll();
+showModules();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZyrkaClient - ClickGUI Preview</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Courier New",monospace;font-size:14px}
+#gui{position:relative;width:100%;height:100%;background:#0A0A1A;display:flex;opacity:0;animation:fadeIn .3s forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+
+#sidebar{position:relative;width:110px;min-width:110px;height:100%;background:#10101E;border-right:1px solid #AA00AA;z-index:2;display:flex;flex-direction:column}
+#sidebar::after{content:'';position:absolute;top:0;right:-1px;width:1px;height:100%;background:rgba(170,0,170,.33)}
+#logo{color:#AA00AA;font-size:11px;font-weight:700;padding:8px 10px;letter-spacing:.5px}
+
+.cat-tab{height:30px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#999;font-size:12px;position:relative;transition:background .1s,color .1s;user-select:none}
+.cat-tab:hover{background:rgba(255,255,255,.08)}
+.cat-tab.selected{background:rgba(170,0,170,.2);color:#fff}
+.cat-tab.selected::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:#AA00AA}
+.sep{margin:6px 0 2px}
+
+#targets-tab{height:30px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#999;font-size:12px;user-select:none;transition:background .1s,color .1s}
+#targets-tab:hover{background:rgba(255,255,255,.08)}
+#targets-tab.active{background:rgba(170,0,170,.2);color:#fff}
+#targets-tab.active::before{content:'';position:absolute;left:0;top:0;width:3px;height:30px;background:#AA00AA}
+
+.spacer{flex:1}
+
+#config-area{position:relative}
+#config-btn{height:22px;display:flex;align-items:center;padding:0 14px;cursor:pointer;color:#AA00AA;font-size:12px;user-select:none;transition:background .1s;margin-bottom:10px}
+#config-btn:hover{background:rgba(255,255,255,.08)}
+
+#config-dd{position:absolute;bottom:36px;left:6px;width:98px;background:#12122A;border:1px solid #AA00AA;border-radius:0;overflow:hidden;display:none;z-index:10}
+#config-dd.open{display:block;animation:ddSlide .25s ease-out}
+@keyframes ddSlide{from{opacity:0;transform:scaleY(.8);transform-origin:bottom}to{opacity:1;transform:scaleY(1)}}
+.dd-item{height:22px;display:flex;align-items:center;padding:0 6px;cursor:pointer;color:#CCC;font-size:11px;transition:background .1s,color .1s;user-select:none}
+.dd-item:hover{background:rgba(170,0,170,.25);color:#fff}
+.dd-sep{height:1px;background:rgba(170,0,170,.27);margin:3px 4px}
+.dd-config{height:22px;display:flex;align-items:center;padding:0 6px;cursor:pointer;color:#DDD;font-size:11px;transition:background .1s,color .1s;user-select:none}
+.dd-config:hover{background:rgba(170,0,170,.25);color:#fff}
+.dd-empty{height:22px;display:flex;align-items:center;padding:0 6px;color:#888;font-size:11px}
+
+#content{flex:1;display:flex;padding:10px 0 10px 16px;gap:20px;overflow:hidden;position:relative}
+
+#module-list{width:160px;min-width:160px;height:100%;background:rgba(14,14,28,.8);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow:hidden}
+#module-list.visible{display:flex}
+#ml-header{display:flex;padding:2px 4px 4px}
+#ml-search{width:100%;background:#1A1A2E;border:1px solid #333;color:#AAA;font:11px "Courier New",monospace;padding:3px 6px;outline:none;transition:border .15s}
+#ml-search:focus{border-color:#AA00AA;color:#fff}
+#ml-search::placeholder{color:#555}
+#ml-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:2px 2px 0}
+#ml-body::-webkit-scrollbar{width:4px}
+#ml-body::-webkit-scrollbar-track{background:transparent}
+#ml-body::-webkit-scrollbar-thumb{background:rgba(170,0,170,.3)}
+
+.module-item{height:26px;display:flex;align-items:center;padding:0 8px;cursor:pointer;position:relative;transition:background .1s;user-select:none;margin-bottom:1px}
+.module-item:hover{background:rgba(42,42,74,.3)}
+.module-item.enabled{background:rgba(26,26,58,.13)}
+.module-item.enabled::before{content:'';position:absolute;left:0;top:0;width:2px;height:100%;background:rgba(170,0,170,.8)}
+.module-name{flex:1;font-size:12px;color:#888;transition:color .15s}
+.module-item.enabled .module-name{color:#fff}
+.module-settings-btn{font-size:11px;color:rgba(170,0,170,.4);cursor:pointer;padding:0 2px;transition:color .1s;user-select:none}
+.module-settings-btn:hover{color:rgba(170,0,170,.9)}
+.module-item.enabled .module-settings-btn{color:rgba(170,0,170,.6)}
+
+#settings-panel{width:160px;min-width:160px;height:auto;max-height:100%;background:rgba(14,14,28,.94);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow:hidden}
+#settings-panel.open{display:flex;animation:settingsIn .3s ease-out}
+@keyframes settingsIn{from{opacity:0;max-height:0}to{opacity:1;max-height:100%}}
+#sp-header{color:#AA00AA;font-size:11px;padding:6px 8px 2px;font-weight:700}
+#sp-body{flex:1;overflow-y:auto;padding:0 4px 4px}
+.setting-row{min-height:28px;padding:2px 4px;font-size:11px}
+.setting-name{color:#CCC;margin-bottom:1px}
+.setting-value{margin-top:1px}
+
+.setting-bool{display:flex;justify-content:flex-end}
+.setting-bool span{cursor:pointer;font-size:11px;font-weight:700;padding:1px 8px;transition:color .1s;user-select:none}
+.setting-bool.on span{color:#0C0}
+.setting-bool.off span{color:#C00}
+.setting-number{text-align:right;color:#FFA;font-size:11px}
+.setting-bar{margin-top:2px;height:3px;background:rgba(51,51,85,.33);position:relative;cursor:pointer;border-radius:1px}
+.setting-bar-fill{height:100%;background:rgba(170,0,170,.8);border-radius:1px;transition:width .1s}
+.setting-mode{text-align:right;color:#5FF;font-size:11px;cursor:pointer;user-select:none}
+.setting-mode:hover{text-decoration:underline}
+.setting-color{display:flex;justify-content:flex-end}
+.setting-swatch{width:18px;height:12px;border:1px solid rgba(255,255,255,.53);cursor:pointer}
+
+#entity-filter{width:180px;min-width:180px;height:100%;background:rgba(14,14,28,.8);border-top:1px solid rgba(170,0,170,.33);display:none;flex-direction:column;overflow-y:auto;padding:0 0 8px}
+#entity-filter.visible{display:flex}
+#ef-header{color:#AA00AA;font-size:12px;padding:6px 8px 2px;font-weight:700}
+#ef-sub{color:#888;font-size:10px;padding:0 8px 6px}
+#ef-body{padding:0 4px}
+.ef-sep{height:1px;background:rgba(170,0,170,.27);margin:8px 4px}
+.ef-section-title{color:#888;font-size:10px;padding:2px 4px}
+.ef-row{height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 4px;cursor:pointer;border-radius:2px;margin-bottom:2px;transition:background .1s;user-select:none}
+.ef-row:hover{background:rgba(42,42,74,.2)}
+.ef-row-name{color:#CCC;font-size:11px}
+.ef-row-val{font-size:11px;font-weight:700;cursor:pointer;padding:1px 6px;transition:color .1s;user-select:none}
+.ef-row-val.on{color:#0C0}
+.ef-row-val.off{color:#C00}
+
+#size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#555;font-size:13px;text-align:center;display:none}
+@media(max-width:620px){#entity-filter.visible{display:none}#module-list.visible{display:none}#settings-panel.open{display:none}#size-hint{display:block}}
+</style>
+</head>
+<body>
+
+<div id="gui">
+  <div id="sidebar">
+    <div id="logo">ZyrkaClient</div>
+    <div id="categories">
+      <div class="cat-tab selected" data-cat="COMBAT">Combat</div>
+      <div class="cat-tab" data-cat="MOVEMENT">Movement</div>
+      <div class="cat-tab" data-cat="RENDER">Render</div>
+      <div class="cat-tab" data-cat="MISC">Misc</div>
+    </div>
+    <div class="sep"></div>
+    <div id="targets-tab">Targets</div>
+    <div class="spacer"></div>
+    <div id="config-area">
+      <div id="config-btn">Config</div>
+      <div id="config-dd">
+        <div class="dd-item" data-action="save">Save</div>
+        <div class="dd-item" data-action="load">Load</div>
+        <div class="dd-item" data-action="delete">Delete</div>
+        <div class="dd-item" data-action="browse">Browse</div>
+        <div class="dd-sep"></div>
+        <div id="dd-configs"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="size-hint">Window too small &mdash; resize</div>
+
+    <div id="module-list" class="visible">
+      <div id="ml-header">
+        <input id="ml-search" type="text" placeholder="Search..." autocomplete="off">
+      </div>
+      <div id="ml-body"></div>
+    </div>
+
+    <div id="settings-panel"></div>
+
+    <div id="entity-filter"></div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id:'COMBAT',    name:'Combat' },
+  { id:'MOVEMENT',  name:'Movement' },
+  { id:'RENDER',    name:'Render' },
+  { id:'MISC',      name:'Misc' }
+];
+
+const ENTITY_CATS = ['Players','Hostiles','Passives','Misc'];
+
+const MODULES = [
+  { name:'Triggerbot', cat:'COMBAT', enabled:false, settings:[
+    { type:'number', name:'Reach',         min:3, max:6,   val:4.5, step:.1 },
+    { type:'mode',   name:'Hit Time Mode', modes:['Static','Random','1.9'], val:'Static' },
+    { type:'number', name:'Hit Speed',     min:0, max:25,  val:10,  step:1, hideIf:{setting:'Hit Time Mode',value:'1.9'} },
+    { type:'number', name:'Delay',         min:0, max:500, val:50,  step:10 }
+  ]},
+  { name:'Criticals', cat:'COMBAT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Packet','Jump'], val:'Packet' }
+  ]},
+  { name:'Velocity', cat:'COMBAT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Packet','Jump Reset','Lag'], val:'Packet' }
+  ]},
+  { name:'Flight', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Vanilla','Jetpack','Creative','Infinite Jump'], val:'Vanilla' }
+  ]},
+  { name:'Step', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode',   name:'Mode',      modes:['Instant','Legit'], val:'Instant' },
+    { type:'number', name:'Max Blocks', min:1, max:10, val:2, step:.5, hideIf:{setting:'Mode',value:'Legit'} }
+  ]},
+  { name:'Speed', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode',   name:'Mode',       modes:['Legit Hop','Piercing Attack'], val:'Legit Hop' },
+    { type:'number', name:'Multiplier', min:1, max:5, val:1.5, step:.5 }
+  ]},
+  { name:'Jesus', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['Standard','Solid'], val:'Standard' }
+  ]},
+  { name:'NoFall', cat:'MOVEMENT', enabled:false, settings:[
+    { type:'mode', name:'Mode', modes:['MLG','Packet','No Ground'], val:'Packet' }
+  ]},
+  { name:'ESP', cat:'RENDER', enabled:false, settings:[
+    { type:'color', name:'Entity Color', color:0xFFFFFFFF }
+  ]},
+  { name:'ChestESP', cat:'RENDER', enabled:false, settings:[
+    { type:'number', name:'Max Distance', min:10, max:100, val:50, step:5 },
+    { type:'color',  name:'Chest Color',  color:0xFFFFAA00 }
+  ]},
+  { name:'BlockESP', cat:'RENDER', enabled:false, settings:[
+    { type:'mode',   name:'Block Selection', modes:['Ores','Diamond','Ancient Debris','Custom'], val:'Ores' },
+    { type:'number', name:'Max Distance',    min:10, max:100, val:30, step:5 },
+    { type:'color',  name:'Block Color',     color:0xFF00FF00 }
+  ]},
+  { name:'Tracers', cat:'RENDER', enabled:false, settings:[
+    { type:'color', name:'Tracer Color', color:0xFFFFFFFF }
+  ]},
+  { name:'Fullbright',  cat:'RENDER', enabled:false, settings:[] },
+  { name:'Item Physics', cat:'RENDER', enabled:false, settings:[] },
+  { name:'Nametags', cat:'RENDER', enabled:false, settings:[
+    { type:'bool', name:'Health',   val:true },
+    { type:'bool', name:'Ping',     val:true },
+    { type:'bool', name:'Gamemode', val:false },
+    { type:'bool', name:'Name',     val:true },
+    { type:'bool', name:'Distance', val:false }
+  ]},
+  { name:'Trajectory', cat:'RENDER', enabled:false, settings:[] },
+  { name:'AutoEat',  cat:'MISC', enabled:false, settings:[] },
+  { name:'AntiAFK',  cat:'MISC', enabled:false, settings:[] },
+  { name:'AutoTool', cat:'MISC', enabled:false, settings:[
+    { type:'bool', name:'Sword',   val:true },
+    { type:'bool', name:'Pickaxe', val:true },
+    { type:'bool', name:'Axe',     val:true },
+    { type:'bool', name:'Shovel',  val:true },
+    { type:'bool', name:'Hoe',     val:true }
+  ]}
+];
+
+const entityTarget = { Players:true, Hostiles:true, Passives:false, Misc:false };
+const entityVisual = { Players:true, Hostiles:true, Passives:true, Misc:false };
+
+const configFiles = ['myconfig','pvp','survival','test'];
+
+let selectedCat = 'COMBAT';
+let showTargets = false;
+let configOpen = false;
+let searchQuery = '';
+let settingsModule = null;
+let moduleStates = {};
+let settingStates = {};
+
+MODULES.forEach(m => {
+  moduleStates[m.name] = m.enabled;
+  settingStates[m.name] = {};
+  m.settings.forEach(s => {
+    if (s.type === 'number') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'bool') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'mode') settingStates[m.name][s.name] = s.val;
+    else if (s.type === 'color') settingStates[m.name][s.name] = s.color;
+  });
+});
+
+const catTabs = document.querySelectorAll('.cat-tab');
+const targetsTab = document.getElementById('targets-tab');
+const configBtn = document.getElementById('config-btn');
+const configDD = document.getElementById('config-dd');
+const ddConfigs = document.getElementById('dd-configs');
+const moduleList = document.getElementById('module-list');
+const mlBody = document.getElementById('ml-body');
+const settingsPanel = document.getElementById('settings-panel');
+const entityFilter = document.getElementById('entity-filter');
+const searchInput = document.getElementById('ml-search');
+
+function getFilteredModules() {
+  const q = searchQuery.toLowerCase().trim();
+  let list = MODULES.filter(m => m.cat === selectedCat);
+  if (q) list = MODULES.filter(m => m.name.toLowerCase().includes(q));
+  return list;
+}
+
+function renderModuleList() {
+  const modules = getFilteredModules();
+  let html = '';
+  if (searchQuery) {
+    html += `<div style="color:#FFA;padding:4px 8px;font-size:11px;background:rgba(255,255,170,.05)">Search: ${searchQuery}</div>`;
+  }
+  if (!modules.length) {
+    mlBody.innerHTML = html + '<div style="color:#555;padding:8px;font-size:11px">No modules</div>';
+    return;
+  }
+  html += modules.map(mod => {
+    const en = moduleStates[mod.name];
+    const hasSets = mod.settings.length > 0;
+    const isSettings = settingsModule === mod.name;
+    return `<div class="module-item${en?' enabled':''}" data-mod="${mod.name}">
+      <span class="module-name">${mod.name}</span>
+      ${hasSets ? `<span class="module-settings-btn">${isSettings ? '-' : '+'}</span>` : ''}
+    </div>`;
+  }).join('');
+  mlBody.innerHTML = html;
+}
+
+function isSettingVisible(mod, s) {
+  if (!s.hideIf) return true;
+  return settingStates[mod.name][s.hideIf.setting] !== s.hideIf.value;
+}
+
+function renderSettings() {
+  if (!settingsModule) { settingsPanel.classList.remove('open'); settingsPanel.innerHTML = ''; return; }
+  const mod = MODULES.find(m => m.name === settingsModule);
+  if (!mod || !mod.settings.length) { settingsPanel.classList.remove('open'); settingsPanel.innerHTML = ''; return; }
+
+  settingsPanel.classList.add('open');
+  let html = `<div id="sp-header">${mod.name} Settings</div><div id="sp-body">`;
+  mod.settings.forEach(s => {
+    if (!isSettingVisible(mod, s)) return;
+    const val = settingStates[mod.name][s.name];
+    html += `<div class="setting-row"><div class="setting-name">${s.name}</div><div class="setting-value">`;
+    if (s.type === 'bool') {
+      const on = val;
+      html += `<div class="setting-bool ${on?'on':'off'}" data-mod="${mod.name}" data-set="${s.name}"><span>${on?'ON':'OFF'}</span></div>`;
+    } else if (s.type === 'number') {
+      const pct = ((val - s.min) / (s.max - s.min)) * 100;
+      html += `<div class="setting-number">${val.toFixed(1)}</div>`;
+      html += `<div class="setting-bar" data-mod="${mod.name}" data-set="${s.name}" data-min="${s.min}" data-max="${s.max}"><div class="setting-bar-fill" style="width:${pct}%"></div></div>`;
+    } else if (s.type === 'mode') {
+      html += `<span class="setting-mode" data-mod="${mod.name}" data-set="${s.name}">${val}</span>`;
+    } else if (s.type === 'color') {
+      const c = val >>> 0;
+      const r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
+      html += `<div class="setting-color"><span class="setting-swatch" style="background:rgb(${r},${g},${b})" data-mod="${mod.name}" data-set="${s.name}"></span></div>`;
+    }
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  settingsPanel.innerHTML = html;
+}
+
+function renderEntityFilter() {
+  let html = `<div id="ef-header">Entity Targets</div><div id="ef-sub">Target Settings</div><div id="ef-body">`;
+  ENTITY_CATS.forEach(cat => {
+    const en = entityTarget[cat];
+    html += `<div class="ef-row"><span class="ef-row-name">${cat}</span><span class="ef-row-val ${en?'on':'off'}" data-ef="target" data-cat="${cat}">${en?'ON':'OFF'}</span></div>`;
+  });
+  html += `<div class="ef-sep"></div><div class="ef-section-title">Visual Settings</div>`;
+  ENTITY_CATS.forEach(cat => {
+    const en = entityVisual[cat];
+    html += `<div class="ef-row"><span class="ef-row-name">${cat}</span><span class="ef-row-val ${en?'on':'off'}" data-ef="visual" data-cat="${cat}">${en?'ON':'OFF'}</span></div>`;
+  });
+  html += `</div>`;
+  entityFilter.innerHTML = html;
+}
+
+function renderConfigDropdown() {
+  const fragment = document.createDocumentFragment();
+  const actions = ['Save','Load','Delete','Browse'];
+  actions.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'dd-item';
+    el.dataset.action = a.toLowerCase();
+    el.textContent = a;
+    fragment.appendChild(el);
+  });
+  const sep = document.createElement('div'); sep.className = 'dd-sep'; fragment.appendChild(sep);
+  if (configFiles.length) {
+    configFiles.forEach(cf => {
+      const el = document.createElement('div');
+      el.className = 'dd-config';
+      el.dataset.config = cf;
+      el.textContent = cf;
+      fragment.appendChild(el);
+    });
+  } else {
+    const el = document.createElement('div'); el.className = 'dd-empty'; el.textContent = '(no configs)'; fragment.appendChild(el);
+  }
+  ddConfigs.innerHTML = '';
+  ddConfigs.appendChild(fragment);
+}
+
+function renderAll() {
+  renderModuleList();
+  renderSettings();
+  renderEntityFilter();
+}
+
+function showModules() {
+  showTargets = false;
+  moduleList.classList.add('visible');
+  entityFilter.classList.remove('visible');
+  targetsTab.classList.remove('active');
+  renderAll();
+}
+function showEntityFilter() {
+  showTargets = true;
+  settingsModule = null;
+  moduleList.classList.remove('visible');
+  settingsPanel.classList.remove('open');
+  entityFilter.classList.add('visible');
+  targetsTab.classList.add('active');
+  renderAll();
+}
+
+catTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (showTargets) showModules();
+    catTabs.forEach(t => t.classList.remove('selected'));
+    tab.classList.add('selected');
+    selectedCat = tab.dataset.cat;
+    settingsModule = null;
+    renderAll();
+  });
+});
+
+targetsTab.addEventListener('click', () => {
+  if (showTargets) showModules();
+  else showEntityFilter();
+});
+
+configBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  configOpen = !configOpen;
+  configDD.classList.toggle('open', configOpen);
+  if (configOpen) renderConfigDropdown();
+});
+document.addEventListener('click', () => {
+  configOpen = false;
+  configDD.classList.remove('open');
+});
+
+configDD.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const item = e.target.closest('.dd-item, .dd-config');
+  if (!item) return;
+  configOpen = false;
+  configDD.classList.remove('open');
+  if (item.dataset.action === 'browse') {
+    alert('Browse: opens config directory');
+  } else if (item.dataset.action) {
+    alert(`Action: ${item.dataset.action} (enter config name)`);
+  } else if (item.dataset.config) {
+    alert(`Config selected: ${item.dataset.config}`);
+  }
+});
+
+mlBody.addEventListener('click', (e) => {
+  const item = e.target.closest('.module-item');
+  if (!item) return;
+  const modName = item.dataset.mod;
+  const mod = MODULES.find(m => m.name === modName);
+  if (!mod) return;
+
+  if (e.target.classList.contains('module-settings-btn')) {
+    if (settingsModule === modName) {
+      settingsModule = null;
+    } else {
+      settingsModule = modName;
+    }
+    renderAll();
+    return;
+  }
+
+  moduleStates[modName] = !moduleStates[modName];
+  renderModuleList();
+});
+
+settingsPanel.addEventListener('click', (e) => {
+  const boolDiv = e.target.closest('.setting-bool');
+  if (boolDiv) {
+    const modName = boolDiv.dataset.mod;
+    const setName = boolDiv.dataset.set;
+    settingStates[modName][setName] = !settingStates[modName][setName];
+    renderSettings();
+    return;
+  }
+  const modeSpan = e.target.closest('.setting-mode');
+  if (modeSpan) {
+    const modName = modeSpan.dataset.mod;
+    const setName = modeSpan.dataset.set;
+    const mod = MODULES.find(m => m.name === modName);
+    const set = mod.settings.find(s => s.name === setName);
+    if (set && set.modes) {
+      const idx = set.modes.indexOf(settingStates[modName][setName]);
+      settingStates[modName][setName] = set.modes[(idx + 1) % set.modes.length];
+      renderSettings();
+    }
+    return;
+  }
+});
+
+settingsPanel.addEventListener('mousedown', (e) => {
+  const bar = e.target.closest('.setting-bar');
+  if (!bar) return;
+  e.preventDefault();
+  const modName = bar.dataset.mod;
+  const setName = bar.dataset.set;
+  const min = parseFloat(bar.dataset.min);
+  const max = parseFloat(bar.dataset.max);
+  const mod = MODULES.find(m => m.name === modName);
+  const set = mod.settings.find(s => s.name === setName);
+
+  function updateBar(clientX) {
+    const rect = bar.getBoundingClientRect();
+    let rel = (clientX - rect.left) / rect.width;
+    rel = Math.max(0, Math.min(1, rel));
+    const val = min + rel * (max - min);
+    const step = set.step || 0.1;
+    const stepped = Math.round(val / step) * step;
+    settingStates[modName][setName] = Math.max(min, Math.min(max, stepped));
+    renderSettings();
+  }
+
+  const onMove = (ev) => updateBar(ev.clientX);
+  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  updateBar(e.clientX);
+});
+
+entityFilter.addEventListener('click', (e) => {
+  const val = e.target.closest('.ef-row-val');
+  if (!val) return;
+  const cat = val.dataset.cat;
+  if (val.dataset.ef === 'target') {
+    entityTarget[cat] = !entityTarget[cat];
+  } else if (val.dataset.ef === 'visual') {
+    entityVisual[cat] = !entityVisual[cat];
+  }
+  renderEntityFilter();
+});
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  settingsModule = null;
+  renderModuleList();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (searchInput === document.activeElement) {
+      searchInput.blur();
+    }
+    e.preventDefault();
+  }
+});
+
+renderConfigDropdown();
+renderAll();
+showModules();
+</script>
+</body>
+</html>
